@@ -170,6 +170,172 @@ def parse_json_from_response(response_text):
         return None
 
 
+def safe_str(value):
+    """Safely convert any value to string, handling None and special cases."""
+    if value is None:
+        return "N/A"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, bool):
+        return "Yes" if value else "No"
+    if isinstance(value, str):
+        return value.strip() if value.strip() else "N/A"
+    return str(value)
+
+
+def format_table(data, headers=None):
+    """Format a list of dictionaries as a markdown table."""
+    if not data or not isinstance(data, list):
+        return ""
+
+    # Extract headers from first item if not provided
+    if not headers:
+        if isinstance(data[0], dict):
+            # Collect all unique keys from all items
+            all_keys = []
+            for item in data:
+                if isinstance(item, dict):
+                    for key in item.keys():
+                        if key not in all_keys:
+                            all_keys.append(key)
+            headers = all_keys
+        else:
+            return ""
+
+    if not headers:
+        return ""
+
+    # Create table header - escape pipes in header names
+    safe_headers = [str(h).replace("|", "\\|") for h in headers]
+    table = "| " + " | ".join(safe_headers) + " |\n"
+    table += "| " + " | ".join(["---"] * len(headers)) + " |\n"
+
+    # Add rows
+    for item in data:
+        if isinstance(item, dict):
+            row_values = [safe_str(item.get(h, "")).replace("|", "\\|") for h in headers]
+            table += "| " + " | ".join(row_values) + " |\n"
+
+    return table + "\n"
+
+
+def format_nested_dict(data, indent_level=0):
+    """Recursively format nested dictionaries with proper indentation."""
+    if data is None:
+        return "N/A\n"
+
+    if isinstance(data, str):
+        return f"{data}\n\n"
+
+    if isinstance(data, (int, float, bool)):
+        return f"{safe_str(data)}\n\n"
+
+    if isinstance(data, list):
+        # Check if it's a list of dictionaries (potential table)
+        if data and isinstance(data[0], dict):
+            # Try table format if we have multiple items with similar structure
+            if len(data) > 1:
+                first_keys = set(data[0].keys())
+                # Check if at least 50% of keys match (handles minor variations)
+                similar_structure = all(
+                    isinstance(item, dict) and
+                    len(set(item.keys()) & first_keys) >= len(first_keys) * 0.5
+                    for item in data[1:]
+                )
+                if similar_structure:
+                    # Collect all unique keys maintaining order
+                    all_keys = list(data[0].keys())
+                    for item in data[1:]:
+                        for key in item.keys():
+                            if key not in all_keys:
+                                all_keys.append(key)
+                    return format_table(data, headers=all_keys)
+
+        # Otherwise format as nested structure
+        result = ""
+        for i, item in enumerate(data):
+            if isinstance(item, dict):
+                indent = "  " * indent_level
+                # Add separator for multiple dict items
+                if i > 0:
+                    result += "\n"
+                result += format_nested_dict(item, indent_level + 1)
+            else:
+                indent = "  " * indent_level
+                result += f"{indent}- {safe_str(item)}\n"
+        return result + "\n"
+
+    if isinstance(data, dict):
+        result = ""
+        for key, value in data.items():
+            indent = "  " * indent_level
+
+            # Format key nicely
+            formatted_key = safe_str(key).strip(':')
+
+            if isinstance(value, dict):
+                result += f"{indent}**{formatted_key}:**\n\n"
+                result += format_nested_dict(value, indent_level + 1)
+            elif isinstance(value, list):
+                result += f"{indent}**{formatted_key}:**\n\n"
+
+                # Check if it's a list of dicts (potential table)
+                if value and isinstance(value[0], dict) and len(value) > 1:
+                    # Check if all items are dicts (allow table with missing keys)
+                    if all(isinstance(item, dict) for item in value):
+                        result += format_table(value)
+                        continue
+
+                # Otherwise format as list
+                for item in value:
+                    if isinstance(item, dict):
+                        result += format_nested_dict(item, indent_level + 1)
+                    else:
+                        result += f"{indent}- {safe_str(item)}\n"
+                result += "\n"
+            else:
+                result += f"{indent}**{formatted_key}:** {safe_str(value)}\n\n"
+
+        return result
+
+    return f"{safe_str(data)}\n\n"
+
+
+def format_findings_section(findings):
+    """Format empirical findings with proper handling of complex data structures."""
+    if findings is None:
+        return "No findings available.\n"
+
+    # Handle string findings
+    if isinstance(findings, str):
+        return f"{findings}\n"
+
+    # Handle list of simple items
+    if isinstance(findings, list):
+        # Check if all items are simple strings/numbers
+        if all(isinstance(item, (str, int, float, bool)) for item in findings):
+            result = ""
+            for finding in findings:
+                result += f"- {safe_str(finding)}\n"
+            return result + "\n"
+
+        # Otherwise, complex list - format each item
+        result = ""
+        for i, item in enumerate(findings, 1):
+            if isinstance(item, dict):
+                result += format_nested_dict(item)
+            else:
+                result += f"{i}. {safe_str(item)}\n"
+        return result + "\n"
+
+    # Handle dictionary findings
+    if isinstance(findings, dict):
+        return format_nested_dict(findings)
+
+    # Fallback
+    return f"{safe_str(findings)}\n"
+
+
 def format_analysis_as_markdown(analysis_data):
     """Format parsed analysis data as beautiful markdown."""
     if isinstance(analysis_data, str):
@@ -244,12 +410,7 @@ def format_analysis_as_markdown(analysis_data):
         findings = analysis_data["5. Empirical Findings"]
         markdown += f"## 📊 Empirical Findings\n\n"
 
-        if isinstance(findings, list):
-            for finding in findings:
-                markdown += f"- {finding}\n"
-        else:
-            markdown += f"{findings}\n"
-
+        markdown += format_findings_section(findings)
         markdown += "\n---\n\n"
 
     # 6. Authors' Conclusions

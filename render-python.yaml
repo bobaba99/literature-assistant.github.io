@@ -1,0 +1,27 @@
+# Alternative Render configuration using Python runtime instead of Docker
+# Use this if you want to deploy without Docker
+# To use: Rename to render.yaml (backup the current one first)
+
+services:
+  # Backend API Service (Python Runtime)
+  - type: web
+    name: literature-assistant-backend
+    runtime: python
+    repo: https://github.com/bobaba99/literature-assistant.github.io
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 backend.api.app:app
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # IMPORTANT: Set manually in Render dashboard
+      - key: ALLOWED_ORIGINS
+        value: https://bobaba99.github.io,http://localhost:5001,http://127.0.0.1:5001
+      - key: PORT
+        value: 10000
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: PYTHON_VERSION
+        value: 3.12.0
+    healthCheckPath: /api/health
+    plan: free
+    autoDeploy: true
