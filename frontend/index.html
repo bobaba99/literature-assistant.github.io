@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Literature Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-book-open"></i> Literature Assistant</h1>
+            <p class="subtitle">AI-powered research paper analysis</p>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h2>Upload Research Paper</h2>
+                    <p>Drag and drop a PDF file here or click to browse</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <button class="btn btn-primary" id="uploadBtn">
+                        <i class="fas fa-file-upload"></i> Select PDF File
+                    </button>
+                </div>
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <p><strong>Selected file:</strong> <span id="fileName"></span></p>
+                    <button class="btn btn-secondary" id="clearFileBtn">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </section>
+
+
+            <!-- Process Button -->
+            <section class="action-section">
+                <button class="btn btn-process" id="processBtn" disabled>
+                    <i class="fas fa-cogs"></i> Analyze Paper
+                </button>
+                <div class="loading" id="loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Processing your document...</p>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2><i class="fas fa-file-alt"></i> Analysis Results</h2>
+                    <div class="download-options">
+                        <button class="btn btn-download" id="downloadMarkdown">
+                            <i class="fas fa-download"></i> Download Markdown
+                        </button>
+                        <button class="btn btn-download" id="downloadDocx">
+                            <i class="fas fa-download"></i> Download DOCX
+                        </button>
+                    </div>
+                </div>
+                <div class="markdown-output" id="markdownOutput"></div>
+            </section>
+
+            <!-- Error Section -->
+            <section class="error-section" id="errorSection" style="display: none;">
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p id="errorMessage"></p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Powered by OpenAI</p>
+        </footer>
+    </div>
+
+    <!-- Include Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+services:
+  # Backend API Service
+  - type: web
+    name: literature-assistant-backend
+    runtime: docker
+    repo: https://github.com/bobaba99/literature-assistant.github.io  # TODO: Update with your actual GitHub username
+    branch: main
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false  # IMPORTANT: Set this manually in Render dashboard for security - DO NOT commit your API key
+      - key: ALLOWED_ORIGINS
+        value: https://bobaba99.github.io,http://localhost:5001,http://127.0.0.1:5001  # TODO: Update YOUR_GITHUB_USERNAME with your actual username
+      - key: PORT
+        value: 10000  # Render requires port 10000
+      - key: PYTHONUNBUFFERED
+        value: 1
+    healthCheckPath: /api/health
+    plan: free  # Free tier sleeps after 15min inactivity. Use 'starter' ($7/mo) for always-on
+    autoDeploy: true
